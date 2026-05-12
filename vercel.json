@@ -6,8 +6,9 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
+           "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://shgzillyzzjmshzyosjf.supabase.co wss://shgzillyzzjmshzyosjf.supabase.co; img-src 'self' data: https:;"
         }
+        
       ]
     }
   ]
