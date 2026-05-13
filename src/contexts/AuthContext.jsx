@@ -10,43 +10,62 @@ export function AuthProvider({ children }) {
 
   // Fetch profile by user ID
   const fetchProfile = async (userId) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (error) {
-      console.error('Error fetching profile:', error);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      console.error('Unexpected error fetching profile:', err);
       return null;
     }
-    return data;
   };
 
   // Initialize session and listen for auth changes
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (!mounted) return;
+      if (error) {
+        console.error('Error getting session:', error);
+        setLoading(false);
+        return;
+      }
       setUser(session?.user ?? null);
       if (session?.user) {
         const userProfile = await fetchProfile(session.user.id);
-        setProfile(userProfile);
+        if (mounted) setProfile(userProfile);
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
+    }).catch((err) => {
+      console.error('Session fetch failed:', err);
+      if (mounted) setLoading(false);
     });
 
     // Listen for auth changes
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
       setUser(session?.user ?? null);
       if (session?.user) {
         const userProfile = await fetchProfile(session.user.id);
-        setProfile(userProfile);
+        if (mounted) setProfile(userProfile);
       } else {
         setProfile(null);
       }
+      // Only set loading false here if it's still true (initial load)
       setLoading(false);
     });
 
     return () => {
+      mounted = false;
       listener?.subscription.unsubscribe();
     };
   }, []);
