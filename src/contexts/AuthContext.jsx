@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, getSession } from '../lib/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -9,7 +9,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // Fetch profile by user ID
-  const fetchProfile = async (userId) => {
+  const fetchProfile = async (userId, mounted) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -30,39 +30,51 @@ export function AuthProvider({ children }) {
   // Initialize session and listen for auth changes
   useEffect(() => {
     let mounted = true;
+    let initialLoad = true;
 
-    // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
-      if (!mounted) return;
-      if (error) {
-        console.error('Error getting session:', error);
-        setLoading(false);
-        return;
-      }
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const userProfile = await fetchProfile(session.user.id);
-        if (mounted) setProfile(userProfile);
-      }
-      if (mounted) setLoading(false);
-    }).catch((err) => {
-      console.error('Session fetch failed:', err);
-      if (mounted) setLoading(false);
-    });
+    // Get initial session using the deduplicated wrapper
+    getSession()
+      .then(async (session) => {
+        if (!mounted) return;
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          const userProfile = await fetchProfile(session.user.id);
+          if (mounted) setProfile(userProfile);
+        }
+        if (mounted && initialLoad) {
+          setLoading(false);
+          initialLoad = false;
+        }
+      })
+      .catch((err) => {
+        console.error('Session fetch failed:', err);
+        if (mounted && initialLoad) {
+          setLoading(false);
+          initialLoad = false;
+        }
+      });
 
     // Listen for auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const userProfile = await fetchProfile(session.user.id);
-        if (mounted) setProfile(userProfile);
-      } else {
-        setProfile(null);
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        
+        // Skip if this is the initial session (already handled above)
+        if (event === 'INITIAL_SESSION') return;
+        
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          const userProfile = await fetchProfile(session.user.id);
+          if (mounted) setProfile(userProfile);
+        } else {
+          setProfile(null);
+        }
+        if (mounted && initialLoad) {
+          setLoading(false);
+          initialLoad = false;
+        }
       }
-      // Only set loading false here if it's still true (initial load)
-      setLoading(false);
-    });
+    );
 
     return () => {
       mounted = false;
@@ -78,7 +90,9 @@ export function AuthProvider({ children }) {
     });
     if (error) throw error;
     if (!data?.session) {
-      throw new Error('Unable to sign in. Please check your email, password, and confirm your account if required.');
+      throw new Error(
+        'Unable to sign in. Please check your email, password, and confirm your account if required.'
+      );
     }
     return data;
   };
