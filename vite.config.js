@@ -8,16 +8,30 @@ export default defineConfig({
     open: true,
   },
   build: {
-    chunkSizeWarningLimit: 1000, // Increase from 500kb to 1000kb (1MB)
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks(id) {
           // Split large dependencies into separate chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'supabase-vendor': ['@supabase/supabase-js'],
-          'chart-vendor': ['recharts'],
-          'form-vendor': ['react-hook-form', 'zod', '@hookform/resolvers'],
-          'export-vendor': ['react-csv', 'jspdf', 'jspdf-autotable'],
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('@supabase')) {
+              return 'supabase-vendor';
+            }
+            if (id.includes('recharts') || id.includes('d3')) {
+              return 'chart-vendor';
+            }
+            if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
+              return 'form-vendor';
+            }
+            if (id.includes('react-csv') || id.includes('jspdf')) {
+              return 'export-vendor';
+            }
+            // Default for all other node_modules
+            return 'vendor';
+          }
         }
       }
     }
