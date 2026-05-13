@@ -9,8 +9,7 @@
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; font-src 'self' *.vercel.com *.gstatic.com vercel.live *.public.blob.vercel-storage.com; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://shgzillyzzjmshzyosjf.supabase.co wss://shgzillyzzjmshzyosjf.supabase.co https://*.supabase.in wss://*.supabase.in; img-src 'self' data: https:;"
-        }
-        
+        } 
       ]
     }
   ]
