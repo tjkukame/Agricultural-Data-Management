@@ -58,6 +58,9 @@ export function AuthProvider({ children }) {
       password,
     });
     if (error) throw error;
+    if (!data?.session) {
+      throw new Error('Unable to sign in. Please check your email, password, and confirm your account if required.');
+    }
     return data;
   };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useErrorHandler } from '../../hooks/useErrorHandler';
@@ -6,10 +6,16 @@ import { loginSchema } from '../../schemas/validationSchemas';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, profile, loading: authLoading } = useAuth();
   const { error, loading, setLoading, handleError } = useErrorHandler();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    if (!authLoading && profile) {
+      navigate('/');
+    }
+  }, [authLoading, profile, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -27,20 +27,8 @@ CREATE POLICY "Users can view own profile" ON profiles
 CREATE POLICY "Users can update own profile" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "District officers view profiles in district" ON profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM profiles viewer
-      WHERE viewer.id = auth.uid()
-      AND viewer.role IN ('beo', 'dcpo', 'dio', 'aeo')
-      AND (viewer.district = profiles.district OR viewer.role = 'sito')
-    )
-  );
-
-CREATE POLICY "SITO view all profiles" ON profiles
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'sito')
-  );
+CREATE POLICY "Authenticated users can view profiles" ON profiles
+  FOR SELECT USING (auth.role() = 'authenticated');
 
 -- ============================================
 -- LOCATION (read-only for all authenticated)
